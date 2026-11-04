@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+cat <<'HELP'
+OpenBao is an open source, community-driven fork of HashiCorp Vault: a tool for
+managing secrets, encryption keys and identity. This plugin installs the `bao`
+CLI (and server) from the official prebuilt OpenBao release binaries.
+
+Release builds are published for Linux, macOS, FreeBSD, NetBSD, OpenBSD and
+Windows, with HSM-enabled builds available for Linux on amd64/arm64.
+HELP

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+cat <<'HELP'
+Git Repository: https://github.com/openbao/openbao
+Releases: https://github.com/openbao/openbao/releases
+Documentation: https://openbao.org/docs/
+HELP

@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+current_script_path=${BASH_SOURCE[0]}
+plugin_dir=$(dirname "$(dirname "$current_script_path")")
+
+# shellcheck source=./lib/utils.bash
+source "${plugin_dir}/lib/utils.bash"
+
+query="$(normalize_version "${1:-}")"
+
+# Newest first, filtered by the optional query (e.g. `asdf latest openbao 2.6`).
+versions="$(list_all_versions | sort_versions | awk -v q="$query" 'index($0, q) == 1' |
+	awk '{ v[NR] = $0 } END { for (i = NR; i >= 1; i--) print v[i] }')"
+
+[ -n "$versions" ] || fail "no $TOOL_NAME version found matching '${query}'"
+
+version=""
+for candidate in $versions; do
+	# Only consider versions that are actually published for this platform.
+	if curl "${curl_opts[@]}" -I -o /dev/null "$(release_url "$candidate" "$(asset_name "$candidate")")"; then
+		version="$candidate"
+		break
+	fi
+done
+
+[ -n "$version" ] || fail "no installable $TOOL_NAME version found matching '${query}' for $(get_platform)/$(get_arch)"
+
+printf '%s\n' "$version"
