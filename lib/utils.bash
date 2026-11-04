@@ -314,33 +314,38 @@ sha256_of() {
 	fi
 }
 
-verify_checksum() {
-	local version="$1" asset="$2" archive="$3"
-	local scheme schemes checksums expected actual url
+# Prints the release checksum file for <version>. Tries the layout expected
+# for that version first, then the other one (the layout changed in 2.6.0).
+fetch_checksums() {
+	local version="$1" schemes scheme url checksums
 
-	if is_truthy "${ASDF_OPENBAO_SKIP_CHECKSUM:-0}"; then
-		msg "WARNING: skipping checksum verification (ASDF_OPENBAO_SKIP_CHECKSUM is set)"
-		return 0
-	fi
-
-	# Try the checksum file expected for this version first, then the other
-	# naming scheme (releases changed the layout in 2.6.0).
 	if version_ge "$version" "$MODERN_CHECKSUMS_VERSION"; then
 		schemes="modern legacy"
 	else
 		schemes="legacy modern"
 	fi
 
-	checksums=""
 	for scheme in $schemes; do
 		url="$(release_url "$version" "$(checksum_asset_name "$version" "$scheme")")"
 		if checksums="$(curl "${curl_opts[@]}" "$url" 2>/dev/null)"; then
-			break
+			printf '%s' "$checksums"
+			return 0
 		fi
-		checksums=""
 	done
 
-	if [ -z "$checksums" ]; then
+	return 1
+}
+
+verify_checksum() {
+	local version="$1" asset="$2" archive="$3"
+	local checksums expected actual
+
+	if is_truthy "${ASDF_OPENBAO_SKIP_CHECKSUM:-0}"; then
+		msg "WARNING: skipping checksum verification (ASDF_OPENBAO_SKIP_CHECKSUM is set)"
+		return 0
+	fi
+
+	if ! checksums="$(fetch_checksums "$version")"; then
 		msg "WARNING: no checksum file published for $TOOL_NAME $version, skipping verification"
 		return 0
 	fi

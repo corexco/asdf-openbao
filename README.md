@@ -99,6 +99,46 @@ ASDF_OPENBAO_OVERWRITE_PLATFORM=linux ASDF_OPENBAO_OVERWRITE_ARCH=arm64 \
 - **Ref installs** (`asdf install openbao ref:...`) are not supported; only
   released binaries are installed.
 
+## Keeping the plugin up to date
+
+Most of the upkeep is automatic:
+
+- **New OpenBao releases need no plugin change.** `bin/list-all` reads the git
+  tags at run time, so a new `v2.x.y` tag is installable as soon as OpenBao
+  publishes it — there is no version list to bump.
+- **`.github/workflows/canary.yml` runs daily** (and on demand) and does three
+  things: checks that the newest release still matches the artifact layout this
+  plugin derives (`test/upstream-layout.bash`), installs `latest` on Linux and
+  macOS, and re-tests the legacy artifact layout (2.5.5) and an HSM build.
+- **Dependabot** bumps the GitHub Actions used by the workflows weekly.
+- **Push/PR tests** (`.github/workflows/test.yml`) run the offline unit tests and
+  `asdf plugin test`, and lint runs shellcheck/shfmt.
+
+The remaining hard-coded upstream facts live at the top of `lib/utils.bash`:
+
+| Constant / code | Update when |
+| :-------------- | :---------- |
+| `MIN_VERSION` | OpenBao ever publishes releases below 2.0.0 (they are pre-fork Vault history). |
+| `MODERN_NAMING_VERSION` | The artifact naming scheme changes again (a third scheme). The canary fails first. |
+| `MODERN_CHECKSUMS_VERSION` | The checksum file layout changes again. The canary fails first. |
+| `get_platform` / `get_arch` | OpenBao adds or drops an OS/architecture (the canary reports dropped optional platforms as notes, and dropped core platforms as failures). |
+| `GH_REPO` | The releases ever move away from `github.com/openbao/openbao`. |
+
+Two upstream quirks need no action:
+
+- A git tag with no release (e.g. `2.4.2`) is still listed by `asdf list all`,
+  because version discovery is tag based. Installing it fails with a clear error,
+  and `asdf latest` skips it by probing the artifact URL first.
+- HSM builds disappeared in 2.7.x. `ASDF_OPENBAO_HSM=1` keeps working as-is if
+  upstream resumes publishing them.
+
+One-time, human-only tasks:
+
+- Submit the plugin to the [asdf plugin index](https://github.com/asdf-vm/asdf-plugins)
+  so `asdf plugin add openbao` works without a URL.
+- Optionally tag plugin releases (`v1.0.0`, ...) so users can pin
+  `--asdf-plugin-gitref`.
+
 ## Development
 
 The plugin is plain bash (bash 3.2 compatible, so it works with the system bash
@@ -111,6 +151,12 @@ cd asdf-openbao
 # Lint and format (requires shellcheck and shfmt)
 make lint
 make format
+
+# Offline unit tests
+make test-unit
+
+# Check the newest upstream release still matches the expected layout
+./test/upstream-layout.bash
 
 # Run the plugin against the real OpenBao releases
 asdf plugin add openbao "$PWD"

@@ -1,0 +1,60 @@
+name: Upstream canary
+
+# OpenBao releases are discovered at run time (bin/list-all reads git tags), so
+# new versions need no plugin change. What can rot is the artifact layout, which
+# is why this runs on a schedule: an upstream change (renamed files, different
+# checksums file, dropped platform) turns into a red build here instead of a
+# broken `asdf install openbao latest` for users.
+
+on:
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  layout:
+    name: artifact layout
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: ./test/upstream-layout.bash
+
+  latest:
+    name: install latest
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: asdf_plugin_test
+        uses: asdf-vm/actions/plugin-test@v4
+        with:
+          command: bao --version
+          version: latest
+
+  legacy_artifacts:
+    name: install 2.5.5 (legacy artifact layout)
+    runs-on: ubuntu-latest
+    steps:
+      - name: asdf_plugin_test
+        uses: asdf-vm/actions/plugin-test@v4
+        with:
+          command: bao --version
+          version: 2.5.5
+
+  hsm_build:
+    name: install HSM build
+    runs-on: ubuntu-latest
+    steps:
+      - name: asdf_plugin_test
+        uses: asdf-vm/actions/plugin-test@v4
+        with:
+          command: bao --version
+          version: 2.6.5
+        env:
+          ASDF_OPENBAO_HSM: 1
