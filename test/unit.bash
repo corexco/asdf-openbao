@@ -147,7 +147,7 @@ assert_eq "install_version succeeds" "0" "$(
 	echo $?
 )"
 assert_eq "install_version places bin/bao" "LICENSE bin bin/bao" \
-	"$(cd "$sandbox/install" && find . -mindepth 1 -maxdepth 2 | sed 's|^\./||' | sort | xargs)"
+	"$(cd "$sandbox/install" && find . -mindepth 1 -maxdepth 2 | sed 's|^\./||' | LC_ALL=C sort | xargs)"
 if [ -x "$sandbox/install/bin/bao" ]; then r=yes; else r=no; fi
 assert_eq "bin/bao is executable" "yes" "$r"
 
