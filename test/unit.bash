@@ -108,7 +108,7 @@ check_asset "HSM linux/amd64 (current)" 2.6.5 linux amd64 \
 	"openbao-hsm_2.6.5_linux_amd64.tar.gz" "" "" 1
 check_asset "HSM linux/amd64 (legacy)" 2.5.5 linux amd64 \
 	"bao-hsm_2.5.5_Linux_x86_64.tar.gz" "" "" 1
-# shellcheck disable=SC2317 # invoked indirectly by assert_fails
+# shellcheck disable=SC2317,SC2329 # invoked indirectly by assert_fails
 hsm_on_darwin() {
 	export ASDF_OPENBAO_OVERWRITE_PLATFORM=darwin
 	export ASDF_OPENBAO_HSM=1
